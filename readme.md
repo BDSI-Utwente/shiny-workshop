@@ -6,7 +6,9 @@ date: June 3rd, 2022
 
 # Shiny Workshop Documentation
 
-This repository contains the presentation slides and example code used during the BDSi Shiny Workshop on June 3rd, 2022.
+This repository contains the presentation slides and example code used during the BDSi Shiny Workshop on June 3rd, 2022. 
+
+The `examples` folder contains three sets of examples for common problems/features. Presentation slides used during the workshop can be found in `slides`. `renv` contains metadata about the R environment used in this project, which together with `renv.lock` file can be used to exactly reproduce the results. Finally, `participantns` (will) contain(s) examples of apps created by workshop participants.
 
 ## Presentation slides
 Presentation slides inn `.pptx` format are available in the [slides](./slides/) folder. Supporting images are also in that folder.
@@ -31,5 +33,3 @@ An extremely common input is to allow the user to select a variable from a datas
 
 The example uses music chart data to show how to populate inputs choices from the data, generating options based on artists listed in the data. It then expands on this topic by implementing a conditional input to select a track that only appears when the user has selected an artist, and dynamically updates the available track choices based on the chosen artist. 
 
-## Participants
-Shiny apps created by participants will be uploaded here.
