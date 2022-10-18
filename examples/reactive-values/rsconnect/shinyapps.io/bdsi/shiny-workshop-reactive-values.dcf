@@ -1,0 +1,13 @@
+name: shiny-workshop-reactive-values
+title: shiny-workshop-reactive-values
+username:
+account: bdsi
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6426434
+bundleId: 5975060
+url: https://bdsi.shinyapps.io/shiny-workshop-reactive-values/
+when: 1654266576.4062
+lastSyncTime: 1654266576.4062
+asMultiple: FALSE
+asStatic: FALSE
