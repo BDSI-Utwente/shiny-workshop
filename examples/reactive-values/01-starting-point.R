@@ -2,6 +2,10 @@
 library(shiny)
 library(tidyverse)
 
+# enable the reactive log to visualize updates
+# https://shiny.posit.co/r/articles/improve/debugging/#the-reactive-log
+options(shiny.reactlog=TRUE) 
+
 # load diamonds dataset
 data("diamonds")
 
@@ -17,9 +21,10 @@ ui <- fluidPage( # sets up HTML for a 'responsive' app that (should) work on all
     # declare content for the side bar
     sidebarPanel(
 
-      # create select input (dropdown) for picking predictor property
-      # NOTE: the available choices match the variable names in the diamonds data set
-      selectInput("variable", "Select variable...", c("carat", "cut", "color", "clarity", "depth", "table"))
+      # let the user select a predictor variable
+      selectInput("predictor", "Predictor", 
+                  choices = diamonds %>% select(-price) %>% names(),
+                  selected = "carat")
     ),
 
     # declare content for the main panel
@@ -44,8 +49,8 @@ ui <- fluidPage( # sets up HTML for a 'responsive' app that (should) work on all
 server <- function(input, output) {
 
   # Note that the elements of `output` match exactly with the names used for the various
-  # xxxOutput(...) functions in the UI. Since this data is serialized and sent over a
-  # network connection, these names MUST match EXACTLY.
+  # xxxOutput(...) functions in the UI. These names MUST match EXACTLY, including 
+  # capitalization!
   # The same is true for the elements of the `input` object, defined with the xxxInput(...)
   # functions in the user interface.
   # Both inputs and outputs are reactive values, meaning that if their value changes, any
@@ -54,21 +59,13 @@ server <- function(input, output) {
   # base R, lattice, etc.). It uses the png device to encode the plot as an image, and
   # then serializes the data to be submitted over the network to the UI.
   output$graph <- renderPlot({
-    if (input$variable == "") {
-      return() # return null if we haven't selected a variable
-    } else {
-      # Note that we use the "data pronoun" '.data' here to access a column whose name we
-      # do not know a-priori. That is, we select a column with a _variable_ name. Doing so
-      # in functions that use 'non-standard evaluation' (e.g., ggplot, tidyverse) requires
-      # some additional care.
-      # See <https://dplyr.tidyverse.org/articles/programming.html#indirection> for more
-      # in-depth discussion about programming with tidyverse functions and variable inputs.
-      ggplot(diamonds, aes(x = .data[[input$variable]], y = price)) +
-        geom_point() +
-        # note that geom_smooth() calculates a fit (a linear model with `method="lm"`) in the
-        # background.
-        geom_smooth(method = "lm")
-    }
+    req(input$predictor)
+    
+    ggplot(diamonds, aes(x = .data[[input$predictor]], y = price)) +
+      geom_point() +
+      # note that geom_smooth() calculates a smoothed fit (using a linear model with 
+      # `method="lm"`).
+      geom_smooth(method = "lm")
   })
 
 
@@ -76,18 +73,11 @@ server <- function(input, output) {
   # output generated (e.g. warning messages, etc.). It then serializes the data, and sends it
   # to the UI.
   output$summary <- renderPrint({
-    if (input$variable == "") {
-      return() # return null if we haven't selected a variable
-    } else {
-
-      # We use `paste(...)` to create a character representation of the formula required as
-      # the first argument of the `lm(...) function, which is then parsed as a formula with
-      # `as.formula(...)`.
-      f <- paste("price", "~", input$variable) %>% as.formula()
-
-      # calculate a linear model, and print the summary.
-      lm(f, diamonds) %>% summary()
-    }
+    req(input$predictor)
+    
+    # calculate a linear model, and print the summary.
+    .formula <- glue::glue("price ~ {input$predictor}")
+    lm(.formula, diamonds) %>% summary()
   })
 }
 
