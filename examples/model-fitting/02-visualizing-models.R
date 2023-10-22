@@ -10,31 +10,26 @@ predictors <- diamonds %>%
 ui <- fluidPage(titlePanel("Diamond price prediction"),
                 sidebarLayout(
                   sidebarPanel(
-                    # using the var-selectize input this time
-                    
-                    # Note that using this input also allows us to use the
-                    # order in which the user has selected variables, whereas
-                    # checboxGroup input always has a static order.
-                    varSelectizeInput(
+                    # Let user choose predictors
+                    selectInput(
                       "predictors",
                       "Select predictors...",
-                      diamonds %>% select(-price),
+                      diamonds %>% select(-price) %>% names(),
                       multiple = TRUE
                     ),
                     
-                    # Add additional selector for what to show on x axis
-                    varSelectizeInput("x",
-                                      "Select x-axis...",
-                                      # note that we use an empty vector, we will update choices
-                                      # when the user has selected predictors.
-                                      c(),
-                                      multiple = FALSE)
+                    # Add additional selector for which predictor to show on x axis
+                    selectInput("x",
+                                "Select x-axis...",
+                                # note that we start with an empty vector of choices,
+                                # we will update choices when the user has selected
+                                # one or more predictors.
+                                c(),
+                                multiple = FALSE)
                   ),
                   
-                  mainPanel(fluidRow(
-                    column(8, plotOutput("plot")),
-                    column(4, verbatimTextOutput("summary"))
-                  ))
+                  mainPanel(plotOutput("plot"),
+                            verbatimTextOutput("summary"))
                 ))
 
 server <- function(input, output, session) {
@@ -44,20 +39,32 @@ server <- function(input, output, session) {
   # the available options for selecting plot parameters in later steps.
   data <- reactive({
     req(input$predictors)
+    print(input$predictors)
     
-    # We're again dealing with non-standard evaluation here, but the `tidy`
-    # packages deal with this slightly different than `ggplot`. ggplot came first,
-    # but the R language has moved on a bit since then. At some point, ggplot will
-    # likely be updated to match the rest of tidyverse (maybe for ggplot3).
-    
+    # We're dealing with non-standard evaluation here. Conceptually, the problem
+    # is that tidyr, ggplot, and so forth are too smart for their own good,
+    # and allow us to pass unquoted column names that they 'magically' match
+    # to the context (dataset) they've been given.
+    #
+    # How can you pass these functions a _variable_ containing the _name(s)_ of
+    # the columns that should be selected?
+    # The solution is to use some special syntax to make it explicit that the
+    # passed variable should be evaluated 'outside' of the data context.
+    #
+    # To make matters even more confusing, `varSelectInput` returns the selected
+    # choice(s) as a (list of) 'symbols', requiring a different syntax to deal
+    # with (`!!!` for multiple-choice inputs, `!!` for single choice).
+    #
     # See https://mastering-shiny.org/action-tidy.html for more details, and
     # keep in mind that this is a complex topic, with multiple solutions. Don't
     # worry if you don't fully understand what's happening here.
+    #
+    # To filter the data, we 'manually' select the price column, and use `any_of`
+    # to select the remaining columns by name.
+    diamonds %>% select(price, any_of(input$predictors))
     
-    # We're explicitly selecting our outcome (price), and use the 'splice' operator
-    # `!!!` to splice the vector of predictors into individual arguments for the
-    # select function.
-    diamonds %>% select(price, !!!input$predictors)
+    # if we'd used `varSelectInput`, we'd change the above line to:
+    # diamonds %>% select(price, !!!input$predictors)
   })
   
   # We use an observer to react to any changes in the data, and update the choices
@@ -66,14 +73,19 @@ server <- function(input, output, session) {
     req(data())
     
     # note that "data()" is the filtered version created above
-    updateVarSelectizeInput(session, "x", 
-                            data = data() %>% select(-price),
-                            
-                            # keep previous selection (what happens if it is now invalid?)
-                            selected = input$x)
-  }) 
+    updateVarSelectInput(session,
+                         "x",
+                         data = data() %>% select(-price),
+                         
+                         # keep previous selection
+                         # (note that this may lead to odd results if the previous
+                         # selection is no longer valid, but we'll leave that as
+                         # an extended homework exercise.)
+                         selected = input$x)
+  })
   
-  model <- reactive({ 
+  # Another reactive expression for the fitted model...
+  model <- reactive({
     req(data())
     
     # we can now take the data with selected predictors, and use a 'predict x by all'
@@ -84,29 +96,32 @@ server <- function(input, output, session) {
     # Note that if we didn't do this, we would create an implicit binding on both
     # `input$predictors` AND the `data()` reactive, potentially causing the model
     # to update twice. The first time immediately after `input$predictors` updates,
-    # the second when `model()` is updated. Shiny tries to be smart in resolving
+    # the second when `data()` is updated. Shiny tries to be smart in resolving
     # when to update what so that it has to do as little work as possible, but it's
-    # usually better to be explicit.
+    # usually better to be explicit, if only to make our intentions clear to others
+    # that read our code (including our future selves!)
     bindEvent(data())
   
   output$plot <- renderPlot({
     req(model(), input$x)
     
-    # create some temporary data for plotting
+    # create some temporary data for plotting, start wit the filtered data
     plot_data <- data() %>%
-      # attach the predicted values
+      # attach the predicted values from the model
       mutate(predicted = model()$fitted.values) %>%
       
-      # create two datapoints for each observation, one for the observed price,
-      # and one for the predicted price. Also adds a new variable "prediction"
-      # we can use to distinguish between the two.
+      # create two rows for each observation, one for the observed price, and one
+      # for the predicted price. Also adds a new variable "prediction" we can use
+      # to distinguish between the two.
       pivot_longer(c(predicted, price),
                    names_to = "prediction",
                    values_to = "price")
     
+    # plot itself is fairly straightforward, though note that we use the `.data`
+    # pronoun to let ggplot know `input$x` is an 'external' variable.
     plot_data %>%
       ggplot(aes(
-        x = !!input$x,
+        x = .data[[input$x]],
         y = price,
         colour = prediction
       )) +
@@ -114,7 +129,7 @@ server <- function(input, output, session) {
       geom_smooth()
   })
   
-  output$summary <- renderPrint({ 
+  output$summary <- renderPrint({
     req(model())
     
     model() %>% summary()
