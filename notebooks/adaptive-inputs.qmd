@@ -6,7 +6,7 @@ format: html
 server: shiny
 ---
 
-## The problem
+## An app for billboards top 100 data
 
 The goal of most shiny apps let the user interact with some dataset. We'll set up inputs to match 
 the different variables in the dataset, perhaps to select a variable, filter on a column, and so forth.
@@ -16,7 +16,6 @@ Consider a simple app designed to query (old) billboard top 100 data. A first it
 ```{r}
 #| context: setup
 #| include: false
-
 
 library(shiny)
 library(tidyverse)
@@ -47,6 +46,7 @@ billboard_long <- billboard %>%
 We can then let the user show the top 10 songs or artists in 1999-2000 (the data covers `r range(billboard$date.entered) %>% stringr::str_flatten(" to ")`). The shiny UI for this is simple: 
 
 ```{r}
+#| collapse: true
 #| echo: true
 
 radioButtons("top_type", "Show top...", c("artists", "tracks"), inline = TRUE)
@@ -76,13 +76,12 @@ output$top_10 <- renderTable({
 })
 ```
 ```{r}
-#| echo: true
 #| context: server
 
 # NOTE: It's apparently not possible to echo the source code in server context chunks,
-# so their contents are manually duplicated into a non-evaluated code section for display
+# so their contents are manually duplicated as a non-evaluated code section for display
 # only, and the code that is actually run. 
-# The following is the 'real' code, with duplicated code below. I've tried to keep 
+# The following is the 'real' code, a verbatim copy of the above. I've tried to keep 
 # them perfectly synced, but some inaccuracies may have slipped in over time. 
 
 output$top_10 <- renderTable({
@@ -106,19 +105,24 @@ output$top_10 <- renderTable({
 
 This works great, because we know in advance which variables we have, and their number is rather limited. What happens if we have a dataset with dozens, if not hundreds, of variables? What happens if we want to let the user select values, not variables? 
 
-Imagine that our manager requested that not only do we show the top artists and tracks, we also allow users to show a graph for how a song performed over time. We'll need a way to let the user select artists and tracks. We could theoretically go over the list of all artists and tracks and manually create an input with all these inputs, but the simpler option is to just derive the available options from the data. 
+## Picking tracks
 
-The UI is again relatively straightforward: 
+Imagine that our manager requested that not only do we show the top artists and tracks, we also allow users to show a graph for how a song performed over time. We'll need a way to let the user select artists and tracks. We could theoretically go over the list of all artists and tracks and manually create an input with all these options, but the simpler option is to just derive the available options from the data. 
+
+The UI is again relatively straightforward...
 
 ```{r}
 #| echo: true
 
-selectInput("artist", "Choose an artist", billboard %>% distinct(artist))
-selectInput("track", "Choose a track", billboard %>% distinct(track))
+# filter out duplicate artist names
+selectInput("artist", "Choose an artist", billboard %>% pull(artist) %>% unique())
+
+# same, but using distinct/flatten instead of pull/unique.
+selectInput("track", "Choose a track", billboard %>% distinct(track) %>% flatten())
 plotOutput("track_performance")
 ```
 
-As is the server, we're again using user input to filter the data, which is then 
+...as is the server, we're again using user input to filter the data, which is then 
 plotted in a simple line chart.
 
 ```r
@@ -145,6 +149,8 @@ output$track_performance <- renderPlot({
 ```
 
 That's greatly simplified creating the artist and track selection, but we have a new problem: the list of tracks isn't synchronized with the selected artist. The default selected artist and track just happen to be a match, but if we select a track that wasn't by the selected artist, we just get a blank plot. 
+
+## Dynamically update track choices
 
 Ideally, we'd like to update the available track choices based on the selected artist. We can do that by telling the server to look for changes in the selected artist, and then update the track selection input. This pattern is called an 'observer'. The code for the user interface is identical (though we've changed the input/output id's so they don't conflict with the previous example).
 
@@ -216,19 +222,19 @@ Now, whenever the artist changes, the list of tracks we can choose from changes 
 
 ## dynamic UI
 
-In the previous section, we updated the available choices for a ui element, but the basic UI elements stayed the same. But what if we want to add, remove, or change inputs or other UI elements dynamically? For example, what if for artists with only one track in the billboard data, 
-we want to hide the track choice dropdown, and display only the track name instead? 
+In the previous section, we updated the available choices for a ui element, but the basic UI elements stayed the same. But what if we want to add, remove, or change inputs or other UI elements dynamically? For example, what if for artists with only one track in the billboard data, we want to hide the track choice dropdown, and display only the track name instead? 
 
-This is a simplified example, but we can accomplish this - and much, much more - using 
-the `uiOutput` and `renderUI` functions. These functions allow us to define and update UI elements on the server, and use them as inputs just as if they were defined in the UI. 
+This is a simplified example, but we can accomplish this - and much, much more - using the `uiOutput` and `renderUI` functions. These functions allow us to define and update UI elements on the server, and use them as inputs just as if they were defined in the UI. 
 
 ```{r}
 #| class-output: no-overflow-x
 #| echo: true
 
-# !! We had to wrap inputs in a 'div' element to avoid quarto creating a separate
-# cell container # for each input/output and screwing up overflow on the dropdown 
-# element(s). The extra div isn't necessary in a regular shiny app.
+# Note that we had to wrap inputs in a 'div' element to avoid quarto creating a 
+# separate cell container for each input/output and screwing up overflow on the 
+# dropdown element(s). 
+# The extra div isn't necessary in a regular shiny app.
+
 div(
   selectInput("artist_v3", "Choose an artist", billboard %>% distinct(artist)),
   uiOutput("track_v3_ui"),
@@ -387,4 +393,4 @@ output$track_performance_v3 <- renderPlot({
 })
 ```
 
-The possibilities for nesting UI components are endless. Note however that with each additional layer of dynamism in the UI, the code gets exponentially more complex. In such cases, _modules_ might be more appropriate, but that is out of scope here. The previous example 
+The possibilities for nesting UI components are endless. Note however that with each additional layer of dynamism in the UI, the code gets exponentially more complex. In such cases, _modules_ might be more appropriate, but that is out of scope here.
