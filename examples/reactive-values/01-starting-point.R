@@ -38,19 +38,11 @@ ui <-
 
 # Define server logic to draw graph and format summary table
 server <- function(input, output) {
-  # Note that the elements of `output` match exactly with the names used for the various
-  # xxxOutput(...) functions in the UI. These names MUST match EXACTLY, including
-  # capitalization!
-  # The same is true for the elements of the `input` object, defined with the xxxInput(...)
-  # functions in the user interface.
-  # Both inputs and outputs are reactive values, meaning that if their value changes, any
-  # other reactive values that depend on them will automatically be updated in turn.
-  # renderPlot(...) automatically captures the output of any plotting function (ggplot2,
-  # base R, lattice, etc.). It uses the png device to encode the plot as an image, and
-  # then serializes the data to be submitted over the network to the UI.
   output$graph <- renderPlot({
+    # only continue if a predictor was selected
     req(input$predictor)
     
+    # indirection - we need to grab a variable from an 'external' context (.data pronoun)
     ggplot(diamonds, aes(x = .data[[input$predictor]], y = price)) +
       geom_point() +
       # note that geom_smooth() calculates a smoothed fit (using a linear model with
@@ -58,14 +50,14 @@ server <- function(input, output) {
       geom_smooth(method = "lm")
   })
   
-  
   # renderPrint() captures the result of the expression (similar to print()), as well as any
-  # output generated (e.g. warning messages, etc.). It then serializes the data, and sends it
-  # to the UI.
+  # output generated (e.g. warning messages, etc.). 
   output$summary <- renderPrint({
     req(input$predictor)
     
     # calculate a linear model, and print the summary.
+    # indirection - create a formula from a string using user input
+    # (glue is a fancier paste)
     .formula <- glue::glue("price ~ {input$predictor}")
     lm(.formula, diamonds) %>% summary()
   })
