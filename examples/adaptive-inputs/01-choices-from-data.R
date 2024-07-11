@@ -19,8 +19,8 @@ billboard_long <- billboard %>%
   # up of the date fields.
   mutate(
     full_title = paste(artist, "-", track),
-    date = lubridate::ymd(date.entered) + lubridate::weeks(week),
-    week = lubridate::week(date)
+    week = parse_integer(week),
+    date = lubridate::ymd(date.entered) + lubridate::weeks(week)
   )
 
 # Define UI for an application that allows the user to select an artist and track,
