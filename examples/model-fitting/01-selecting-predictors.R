@@ -36,7 +36,8 @@ ui <- fluidPage(titlePanel("Diamond price prediction"),
                       
                       # note that we still have to remove any columns/variables we 
                       # don't want to show as options
-                      diamonds %>% select(-price)
+                      diamonds %>% select(-price),
+                      multiple = TRUE
                     )
                   ),
                   
