@@ -1,15 +1,14 @@
 library(shiny)
 library(tidyverse)
-library(here)
 
-SMARTc <- vroom::vroom(here::here("SMARTc.csv")) |> 
+SMARTc <- vroom::vroom("SMARTc.csv") |> 
   mutate(EVENT = as.logical(EVENT))
 data("diamonds")
 
 # get names of variables in the diamonds dataset for later use
 # we exclude price, because it is the outcome measure here
 predictors <- SMARTc %>%
-  select(-EVENT, -VEVENT) %>%
+  select(-EVENT, -TEVENT) %>%
   names()
 
 
