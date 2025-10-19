@@ -98,7 +98,10 @@ ui <- fluidPage(titlePanel("Diamond price prediction"),
                     
                   ),
                   
-                  mainPanel(textOutput("prediction"))
+                  mainPanel(
+                    textOutput("prediction"), 
+                    # tableOutput("data")
+                  )
                 ))
 
 server <- function(input, output, session) {
@@ -122,11 +125,15 @@ server <- function(input, output, session) {
     # return inputs and prediction
     bind_cols(values, prediction)
   })
+
+  output$data <- renderTable(prediction())
   
   output$prediction <- renderText({
-    glue::glue(
+    print(prediction())
+
+    glue::glue_data(
+      prediction(),
       "A diamond of {carat} carats, {cut} cut, color {color}, clarity {clarity}, table of {table}, of size {x} by {y} by {z} is worth an estimated {scales::dollar(lwr)} to {scales::dollar(upr)} monopoly bucks.",
-      .envir = prediction()
     )
   })
 }
