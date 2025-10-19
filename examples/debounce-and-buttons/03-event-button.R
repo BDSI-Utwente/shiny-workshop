@@ -6,7 +6,7 @@ library(tidyverse)
 # user to manually control when our data is updated.
 #
 # Of course, we can use the same approach to add buttons to "Update plot", "Fit model",
-# "Fetch data", etc., etc. The same approach can also be used to ignore updates in certain
+# "Download data", etc., etc. The same approach can also be used to ignore updates in certain
 # inputs, intermediate values, etc.
 #
 # As before, most of the changes occur in the server code. In addition, we add a simple
@@ -24,8 +24,8 @@ billboard_long <- billboard %>%
     ) %>%
     mutate(
         full_title = paste(artist, "-", track),
-        date = lubridate::ymd(date.entered) + lubridate::weeks(week),
-        week = lubridate::week(date)
+        week = parse_integer(week),
+        date = lubridate::ymd(date.entered) + lubridate::weeks(week)
     )
 
 ui <- fluidPage(

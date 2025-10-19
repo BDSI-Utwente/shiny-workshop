@@ -31,8 +31,8 @@ billboard_long <- billboard %>%
     # up of the date fields.
     mutate(
         full_title = paste(artist, "-", track),
-        date = lubridate::ymd(date.entered) + lubridate::weeks(week),
-        week = lubridate::week(date)
+        week = parse_integer(week),
+        date = lubridate::ymd(date.entered) + lubridate::weeks(week)
     )
 
 ui <- fluidPage(
@@ -74,7 +74,7 @@ server <- function(input, output) {
         if (is.null(data())) {
             return()
         }
-        ggplot(data(), aes(x = week, y = rank, colour = full_title, linetype = artist, group = full_title)) +
+        ggplot(data(), aes(x = date, y = rank, colour = full_title, linetype = artist, group = full_title)) +
             geom_point() +
             geom_line()
     })

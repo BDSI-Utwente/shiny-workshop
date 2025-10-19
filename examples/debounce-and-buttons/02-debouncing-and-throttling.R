@@ -64,8 +64,8 @@ billboard_long <- billboard %>%
     ) %>%
     mutate(
         full_title = paste(artist, "-", track),
-        date = lubridate::ymd(date.entered) + lubridate::weeks(week),
-        week = lubridate::week(date)
+        week = parse_integer(week),
+        date = lubridate::ymd(date.entered) + lubridate::weeks(week)
     )
 
 ui <- fluidPage(
@@ -92,13 +92,14 @@ server <- function(input, output) {
     }) %>% debounce(1000)
     # Piping the reactive into the debounce (or throttle) function is all we
     # need to do. In this case, we use a debounce strategy with a timeout of 1
-    # second (1000 milliseconds).
+    # second (1000 milliseconds). This is a rather long timeout chosen to highlight
+    # the effect, you'll probably want to use something shorter.
 
     output$plot <- renderPlot({
         if (is.null(data())) {
             return()
         }
-        ggplot(data(), aes(x = week, y = rank, colour = full_title, linetype = artist, group = full_title)) +
+        ggplot(data(), aes(x = date, y = rank, colour = full_title, linetype = artist, group = full_title)) +
             geom_point() +
             geom_line()
     })
