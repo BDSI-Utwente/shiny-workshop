@@ -14,7 +14,7 @@ The `examples` folder contains three sets of examples for common problems/featur
 Presentation slides inn `.pptx` format are available in the [slides](./slides/) folder. Supporting images are also in that folder.
 
 ## Examples
-A series of simplified examples explaining crucial concepts are available in the [examples](./examples) folder. Each example has its own subfolder, and multiple versions of the same app that highlight a problem/feature, and incrementally build to a solution.
+A series of simplified examples explaining crucial concepts are available in the [examples](./examples) folder. Each example has its own subfolder, and multiple versions of the same app that highlight a problem/feature, and incrementally build to a solution. You can run these examples individually through RStudio, or use the included `compose.yml` to run a containerized shiny-server instance for all examples.
 
 ### [Reactive values](./examples/reactive-values)
 Reactivity - updating outputs based on changing inputs - is at the core of programming shiny Apps. But sometimes, a the process of creating outputs from inputs is more complex. You may need to fetch data from external sources, fit a model, or otherwise require intermediate values. 

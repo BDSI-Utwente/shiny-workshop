@@ -1,0 +1,8 @@
+services: 
+  shiny:
+    # image: rocker/shiny-verse
+    build: .      
+    ports:
+      - 3838:3838
+    volumes:
+      - ./examples:/srv/shiny-server
