@@ -1,13 +1,15 @@
 library(shiny)
 library(tidyverse)
+library(here)
 
-SMARTc <- vroom::vroom("SMARTc.csv")
+SMARTc <- vroom::vroom(here::here("SMARTc.csv")) |> 
+  mutate(EVENT = as.logical(EVENT))
 data("diamonds")
 
 # get names of variables in the diamonds dataset for later use
 # we exclude price, because it is the outcome measure here
 predictors <- SMARTc %>%
-  select(-EVENT) %>%
+  select(-EVENT, -VEVENT) %>%
   names()
 
 
@@ -21,7 +23,7 @@ ui <- fluidPage(titlePanel("Event prediction"),
                     
                     # note that we could also have used a dropdown;
                     selectInput(
-                      "predictors_select",
+                      "predictors",
                       "Select predictors...",
                       predictors,
                       multiple = TRUE
@@ -46,11 +48,11 @@ server <- function(input, output) {
     # and outcome, and run a linear model on that:
     #
     # .outcome <- diamonds$price
-    # .predictor <- diamonds[[input$predictor]]
+    # .predictors <- diamonds[[input$predictor]]
     #
-    # lm(.outcome ~ .predictor)
+    # lm(.outcome ~ .predictors)
     #
-    # This would work, but the output we get now uses '.outcome' and '.predictor'
+    # This would work, but the output we get now uses '.outcome' and '.predictors'
     # instead of the actual variable labels. We could further process the output
     # to remove this, but we'll leave that for now.
     #
