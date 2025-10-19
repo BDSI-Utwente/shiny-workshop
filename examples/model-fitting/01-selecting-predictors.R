@@ -1,42 +1,32 @@
 library(shiny)
 library(tidyverse)
+library(here)
 
+SMARTc <- vroom::vroom(here::here("SMARTc.csv")) |> 
+  mutate(EVENT = as.logical(EVENT))
 data("diamonds")
 
 # get names of variables in the diamonds dataset for later use
 # we exclude price, because it is the outcome measure here
-predictors <- diamonds %>%
-  select(-price) %>%
+predictors <- SMARTc %>%
+  select(-EVENT, -VEVENT) %>%
   names()
 
-ui <- fluidPage(titlePanel("Diamond price prediction"),
+
+ui <- fluidPage(titlePanel("Event prediction"),
                 
                 # We'll follow a pretty much standard shiny layout. This includes:
                 # - a sidebar on the left with configurable inputs
                 # - a main content area on the center/right
                 sidebarLayout(
                   sidebarPanel(
-                    # Create a group of checkboxes to select predictor variables
-                    checkboxGroupInput("predictors", "Select predictors...", predictors),
                     
                     # note that we could also have used a dropdown;
                     selectInput(
-                      "predictors_select",
+                      "predictors",
                       "Select predictors...",
                       predictors,
                       multiple = TRUE
-                    ),
-                    
-                    # and because selecting variables from a data set is so common,
-                    # there's also a convenience method that extracts the labels
-                    # for us:
-                    varSelectInput(
-                      "predictors_varSelecet",
-                      "Select predictors...",
-                      
-                      # note that we still have to remove any columns/variables we 
-                      # don't want to show as options
-                      diamonds %>% select(-price)
                     )
                   ),
                   
@@ -58,11 +48,11 @@ server <- function(input, output) {
     # and outcome, and run a linear model on that:
     #
     # .outcome <- diamonds$price
-    # .predictor <- diamonds[[input$predictor]]
+    # .predictors <- diamonds[[input$predictor]]
     #
-    # lm(.outcome ~ .predictor)
+    # lm(.outcome ~ .predictors)
     #
-    # This would work, but the output we get now uses '.outcome' and '.predictor'
+    # This would work, but the output we get now uses '.outcome' and '.predictors'
     # instead of the actual variable labels. We could further process the output
     # to remove this, but we'll leave that for now.
     #
@@ -79,11 +69,11 @@ server <- function(input, output) {
     
     # combine outcome and predictor(s), then create the formula
     formula <-
-      glue::glue("price ~ {predictors_formula}") %>% as.formula()
+      glue::glue("EVENT ~ {predictors_formula}") %>% as.formula()
     
     # note that this is analogous to `lm(price ~ carat + cut, ...)`, but we have
     # to jump through some extra hoops to deal with variable inputs.
-    lm(formula, data = diamonds)
+    glm(formula, data = SMARTc, family = "binomial")
   })
   
   output$plot <- renderPlot({
