@@ -6,22 +6,24 @@ data("diamonds")
 # for this example, we assume a fully saturated model, and then let the
 # user select values to create a prediction
 
-# the model is static, so define it outside the server
+# the model is the same for all users, so define it outside the server function
 model <- lm(price ~ ., diamonds)
 
+# we'll also define some helper functions to help us get valid choices to select from,
+# and select plausible (median) default values.
+
 # a helper function to get unique values for a variable in a dataset
-choices <- function(.data, variable) {
-  .data %>% pull({
-    {
-      variable
-    }
-  }) %>% unique() %>% sort() %>% as.character()
+# note that the `{{variable}}` syntax is a tidyverse 'pronoun' that allows us to use 
+# tidyverse non-standard evaluation ourselves: we can pass an unquoted variable name 
+# to the function, and have it evaluated in the context of the dataset.
+choices <- function(data, variable) {
+  data %>% pull({{variable}}) %>% unique() %>% sort() %>% as.character()
 }
 
 # helper function to get the median value in an ordinal categorical variable
-median <- function(.data) {
+median <- function(data) {
   # get counts for each unique value
-  counts <- table(.data)
+  counts <- table(data)
   
   # get middle data point
   mid <- sum(counts) / 2

@@ -3,10 +3,9 @@ library(tidyverse)
 
 SMARTc <- vroom::vroom("SMARTc.csv") |> 
   mutate(EVENT = as.logical(EVENT))
-data("diamonds")
 
-# get names of variables in the diamonds dataset for later use
-# we exclude price, because it is the outcome measure here
+# get names of variables in the dataset for later use
+# we exclude EVENT and TEVENT, because they are the outcome measures here
 predictors <- SMARTc %>%
   select(-EVENT, -TEVENT) %>%
   names()
@@ -61,8 +60,8 @@ server <- function(input, output) {
     #
     # To do this, we paste together the formula as a string first, and then create
     # a formula with the `as.formula()` function. Take the selected predictors
-    # (e.g., `c("carat", "cut")`), and collapse them into a single string
-    # (e.g., "carat + cut").
+    # (e.g., `c("AGE", "DIABETES")`), and collapse them into a single string
+    # (e.g., "AGE + DIABETES").
     predictors_formula <-
       stringr::str_flatten(input$predictors, " + ")
     
@@ -76,10 +75,11 @@ server <- function(input, output) {
   })
   
   output$plot <- renderPlot({
+    # check if model() returns something; if not, this will exit early.
     req(model())
     
     # plot default plot for models, usually some form of fit diagnostic, but
-    # it depends on the predictors selected
+    # it may depend on the predictors selected
     par(mfcol = c(2, 2)) # plot.lm creates 4 panels for debugging, put them in a 2x2 grid
     model() %>% plot()
   })
